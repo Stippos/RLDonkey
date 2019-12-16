@@ -16,6 +16,7 @@ def process_image(obs, rows, cols):
     return obs
 
 def image_to_ascii(im):
+
     asc = []
     chars = ["B","S","#","&","@","$","%","*","!",":","."]
     for j in range(im.shape[1]):

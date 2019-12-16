@@ -5,7 +5,7 @@ from car import Car
 
 from gym import spaces
 
-from functions import process_image, image_to_ascii
+from functions import process_image, image_to_ascii, rgb2gray
 
 alg = SAC()
 car = Car()
@@ -45,9 +45,9 @@ for i in range(1000):
                 action[0] = max(STEER_LIMIT_LEFT, min(STEER_LIMIT_RIGHT, action[0]))
             
             next_state = alg.process_image(car.step(action))
-            reward = float(len(np.isclose(next_state, state[3, :, :])) < 1000)
+            reward = float(len(next_state[np.isclose(next_state, state[3, :, :])]) < 200)
 
-            image_to_ascii(process_image(next_state, 60, 30).T)
+            image_to_ascii(next_state[::2].T)
 
             episode_reward += reward
             print("Episode: {}, Episode reward: {:.2f}, Step reward: {:.2f}".format(episode, episode_reward, reward))
@@ -63,6 +63,8 @@ for i in range(1000):
 
             if len(alg.replay_buffer) > alg.batch_size:
                alg.update_parameters()
+
+        raise KeyboardInterrupt
 
     except KeyboardInterrupt:
 
