@@ -11,8 +11,8 @@ alg = SAC()
 car = Car()
 
 max_episode_length = 5000
-THROTTLE_MAX = 1
-THROTTLE_MIN = -1
+THROTTLE_MAX = 0.25
+THROTTLE_MIN = 0.17
 STEER_LIMIT_LEFT = -1
 STEER_LIMIT_RIGHT = 1
 episode = 0
