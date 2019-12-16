@@ -11,7 +11,7 @@ alg = SAC()
 car = Car()
 
 max_episode_length = 5000
-THROTTLE_MAX = 0.25
+THROTTLE_MAX = 0.22
 THROTTLE_MIN = 0.17
 STEER_LIMIT_LEFT = -1
 STEER_LIMIT_RIGHT = 1
@@ -50,7 +50,7 @@ for i in range(1000):
             image_to_ascii(next_state[::2].T)
 
             episode_reward += reward
-            print("Episode: {}, Episode reward: {:.2f}, Step reward: {:.2f}".format(episode, episode_reward, reward))
+            print("Episode: {}, Step: {}, Episode reward: {:.2f}, Step reward: {:.2f}".format(episode, step, episode_reward, reward))
 
             not_done = 1.0
 
@@ -66,7 +66,7 @@ for i in range(1000):
 
         raise KeyboardInterrupt
 
-    except KeyboardInterrupt:
+    except:
         
         car.reset()
         for i in range(len(episode_buffer)):
