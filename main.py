@@ -17,8 +17,8 @@ STEER_LIMIT_LEFT = -1
 STEER_LIMIT_RIGHT = 1
 episode = 0
 
-action_space = spaces.Box(low=np.array([STEER_LIMIT_LEFT, THROTTLE_MIN]), 
-high=np.array([STEER_LIMIT_RIGHT, THROTTLE_MAX]), dtype=np.float32 )
+action_space = spaces.Box(low=np.array([STEER_LIMIT_LEFT, -1]), 
+high=np.array([STEER_LIMIT_RIGHT, 1]), dtype=np.float32 )
 
 episode_buffer = []
 
@@ -50,7 +50,7 @@ for i in range(1000):
 
 
             next_state = alg.process_image(car.step(action))
-            reward = float(len(next_state[np.isclose(next_state, state[3, :, :], atol=1)]) / 1600.0)
+            reward = float(len(next_state[np.isclose(next_state, state[3, :, :], atol=1.5)]) / 1600.0)
 
             image_to_ascii(next_state[::2].T)
 
