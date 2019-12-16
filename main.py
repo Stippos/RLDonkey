@@ -12,7 +12,7 @@ car = Car()
 
 max_episode_length = 5000
 THROTTLE_MAX = 0.25
-THROTTLE_MIN = 0.15
+THROTTLE_MIN = 0.17
 STEER_LIMIT_LEFT = -1
 STEER_LIMIT_RIGHT = 1
 episode = 0
@@ -45,7 +45,7 @@ for i in range(1000):
                 action[0] = max(STEER_LIMIT_LEFT, min(STEER_LIMIT_RIGHT, action[0]))
             
             next_state = alg.process_image(car.step(action))
-            reward = float(len(next_state[np.isclose(next_state, state[3, :, :])]) < 200)
+            reward = float(len(next_state[np.isclose(next_state, state[3, :, :], atol=3)]) < 700)
 
             image_to_ascii(next_state[::2].T)
 
