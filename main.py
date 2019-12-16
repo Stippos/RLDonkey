@@ -67,7 +67,8 @@ for i in range(1000):
         raise KeyboardInterrupt
 
     except KeyboardInterrupt:
-
+        
+        car.reset()
         for i in range(len(episode_buffer)):
             reward = 0
         
