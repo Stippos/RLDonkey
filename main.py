@@ -11,8 +11,8 @@ alg = SAC()
 car = Car()
 
 max_episode_length = 5000
-THROTTLE_MAX = 0.22
-THROTTLE_MIN = 0.17
+THROTTLE_MAX = 1
+THROTTLE_MIN = -1
 STEER_LIMIT_LEFT = -1
 STEER_LIMIT_RIGHT = 1
 episode = 0
@@ -25,6 +25,7 @@ episode_buffer = []
 for i in range(1000):
     input("Press enter to start:")
     episode += 1
+    throttle = 0.15
     try:
         step = 0
         state = car.reset()
@@ -41,11 +42,15 @@ for i in range(1000):
                 action = action_space.sample()
             else:
                 action = alg.select_action(temp)
-                action[1] = max(THROTTLE_MIN, min(THROTTLE_MAX, action[0]))
+                #action[1] = max(THROTTLE_MIN, min(THROTTLE_MAX, action[1]))
                 action[0] = max(STEER_LIMIT_LEFT, min(STEER_LIMIT_RIGHT, action[0]))
             
+            throttle += action[1] / 100.0
+            action[1] = max(THROTTLE_MIN, min(THROTTLE_MAX, throttle))
+
+
             next_state = alg.process_image(car.step(action))
-            reward = float(len(next_state[np.isclose(next_state, state[3, :, :], atol=3)]) < 700)
+            reward = float(len(next_state[np.isclose(next_state, state[3, :, :], atol=1)]) / 1600.0)
 
             image_to_ascii(next_state[::2].T)
 
