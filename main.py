@@ -50,7 +50,9 @@ for i in range(1000):
 
 
             next_state = alg.process_image(car.step(action))
-            reward = float(len(next_state[np.isclose(next_state, state[3, :, :], atol=1.5)]) / 1600.0)
+            #reward = float(len(next_state[np.isclose(next_state, state[3, :, :], atol=1.5)]) / 1600.0)
+            reward = throttle
+
 
             image_to_ascii(next_state[::2].T)
 
