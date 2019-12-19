@@ -35,7 +35,7 @@ for i in range(1000):
         episode_reward = 0
 
         while step < max_episode_length:
-            print(state)
+            #print(state)
             step += 1
             temp = state[np.newaxis, :]
 
