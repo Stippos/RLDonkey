@@ -12,7 +12,7 @@ car = Car()
 
 max_episode_length = 5000
 THROTTLE_MAX = 0.25
-THROTTLE_MIN = 0.17
+THROTTLE_MIN = 0.15
 STEER_LIMIT_LEFT = -1
 STEER_LIMIT_RIGHT = 1
 episode = 0
@@ -35,6 +35,7 @@ for i in range(1000):
         episode_reward = 0
 
         while step < max_episode_length:
+            print(state)
             step += 1
             temp = state[np.newaxis, :]
 
@@ -46,13 +47,12 @@ for i in range(1000):
                 action[0] = max(STEER_LIMIT_LEFT, min(STEER_LIMIT_RIGHT, action[0]))
             
             throttle += action[1] / 100.0
-            action[1] = max(THROTTLE_MIN, min(THROTTLE_MAX, throttle))
-
+            throttle = max(THROTTLE_MIN, min(THROTTLE_MAX, throttle))
+            action[1] = throttle
 
             next_state = alg.process_image(car.step(action))
             #reward = float(len(next_state[np.isclose(next_state, state[3, :, :], atol=1.5)]) / 1600.0)
-            reward = throttle
-
+            reward = (throttle - THROTTLE_MIN) / (THROTTLE_MAX - THROTTLE_MIN) 
 
             image_to_ascii(next_state[::2].T)
 
@@ -94,7 +94,5 @@ for i in range(1000):
             print("Training: ")
             alg.update_parameters()
 
-    finally:
-        pass
         
 
