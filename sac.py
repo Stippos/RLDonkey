@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
 import random
+import datetime
 
 from collections import deque
 
@@ -197,4 +198,33 @@ class SAC:
         
         return obs
 
+    def save_model(self, path="checkpoint"):
+        
+        save_path = "sac_model" + path + ".pth"
+
+        data = {}
+        data["actor_model"] = self.actor.state_dict()
+        data["critic_model"] = self.critic.state_dict()
+        data["critic_target"] = self.critic_target.state_dict()
+        data["actor_optimizer"] = self.actor_optimizer.state_dict()
+        data["critic_optimizer"] = self.critic_optimizer.state_dict()
+        data["alpha_optimizer"] = self.alpha_optimizer.state_dict()
+        data["log_alpha"] = self.log_alpha
+
+        torch.save(data, save_path)
+
+    def load_model(self, path="sac_model_checkpoint.pth"):
+
+        data = torch.load(path)
+        self.actor.load_state_dict(data["actor_model"])
+        self.critic.load_state_dict(data["critic_model"])
+        self.critic_target.load_state_dict(data["critic_target"])
+        self.actor_optimizer.load_state_dict(data["actor_optimizer"])
+        self.critic_optimizer.load_state_dict(data["critic_optimizer"])
+        self.alpha_optimizer.load_state_dict(data["alpha_optimizer"])
+        self.log_alpha = data["log_alpha"]
+
+
+
+          
         

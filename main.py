@@ -1,4 +1,6 @@
 import numpy as np
+import torch
+import os
 
 from sac import SAC
 from car import Car
@@ -10,12 +12,23 @@ from functions import process_image, image_to_ascii, rgb2gray
 alg = SAC()
 car = Car()
 
+episode = 0
+random_episodes = 5
+
+cmd = input("If you want to load a model, give model path, default last checkpoint.")
+if cmd != "":
+    episode = random_episodes
+    if os.path.isfile(cmd):
+        alg = torch.load(cmd)
+    else:
+        alg = torch.load("sac_model_checkpoint.pth")
+
 max_episode_length = 5000
 THROTTLE_MAX = 0.25
 THROTTLE_MIN = 0.15
 STEER_LIMIT_LEFT = -1
 STEER_LIMIT_RIGHT = 1
-episode = 0
+
 
 action_space = spaces.Box(low=np.array([STEER_LIMIT_LEFT, -1]), 
 high=np.array([STEER_LIMIT_RIGHT, 1]), dtype=np.float32 )
@@ -23,7 +36,7 @@ high=np.array([STEER_LIMIT_RIGHT, 1]), dtype=np.float32 )
 episode_buffer = []
 
 for i in range(1000):
-    input("Press enter to start:")
+    input("Press enter to start")      
     episode += 1
     throttle = 0.15
     try:
@@ -39,7 +52,7 @@ for i in range(1000):
             step += 1
             temp = state[np.newaxis, :]
 
-            if episode < 3:
+            if episode < random_episodes:
                 action = action_space.sample()
             else:
                 action = alg.select_action(temp)
@@ -74,8 +87,10 @@ for i in range(1000):
         raise KeyboardInterrupt
 
     except:
-        
+        print("Saving chekcpoint")
+        torch.save(alg, "sac_model_checkpoint.pth")
         car.reset()
+        print("Calculating reward")
         for i in range(len(episode_buffer)):
             reward = 0
         
@@ -89,9 +104,8 @@ for i in range(1000):
                 e[-1][0] = 0.0
 
             alg.push_buffer(e)
-
+        print("Training")
         for i in range(50):
-            print("Training: ")
             alg.update_parameters()
 
         
