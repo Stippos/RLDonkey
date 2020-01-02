@@ -27,8 +27,8 @@ if cmd != "":
         alg = torch.load("sac_model_checkpoint.pth")
 
 max_episode_length = 5000
-THROTTLE_MAX = 0.25
-THROTTLE_MIN = 0.15
+THROTTLE_MAX = 0.3
+THROTTLE_MIN = 0.1
 STEER_LIMIT_LEFT = -1
 STEER_LIMIT_RIGHT = 1
 
