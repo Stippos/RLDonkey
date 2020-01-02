@@ -4,7 +4,7 @@ import time
 
 class Car:
     
-    def __init__(self, car = "kari_sim", server = "mqtt.eclipse.org"):
+    def __init__(self, car = "kari", server = "mqtt.eclipse.org"):
         self.control = remote_controller.DonkeyRemoteContoller(car, server)
         self.state = self.control.observe()
         #self.size = np.prod(self.state.shape)

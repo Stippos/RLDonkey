@@ -14,6 +14,27 @@ from episode_buffer import EpisodeBuffer
 
 alg = SAC()
 car = Car()
+car.reset()
+
+## SAC hyperparameters
+gamma = 0.99
+tau = 0.005
+lr = 0.001
+hidden_size = 256
+batch_size = 64
+n_random_episodes = 10
+discount = 0.9
+horizon = 50
+im_rows = 40
+im_cols = 40
+linear_output = 64
+
+
+## Other hyperparameters
+
+training_after_episodes = 1
+
+
 
 episode = 0
 random_episodes = 5
@@ -46,7 +67,8 @@ for i in range(1000):
 #       state, info = car.reset()
 
         state = car.reset()
-
+        car.step([0,0.01])
+        time.sleep(1)
         state = alg.process_image(state)
         state = np.stack((state, state, state, state), axis=0)
         episode_buffer = EpisodeBuffer(alg.horizon, alg.discount)
@@ -68,15 +90,16 @@ for i in range(1000):
             throttle += action[1] / 100.0
             throttle = max(THROTTLE_MIN, min(THROTTLE_MAX, throttle))
             action[1] = throttle
+            action[1] = 0.3
+            
 
 #           next_state, info = car.step(action)
             next_state = car.step(action)
 
             im = next_state
 
-            if len(im[(im > 120) * (im < 130)]) < 2500:# < len(im[(im > 160) * (im < 170)]):
-                print(len(im[(im > 120) * (im < 130)]))
-                print(len(im[(im > 160) * (im < 170)]))
+            darkness = len(im[(im > 120) * (im < 130)])
+            if darkness < 2500:# < len(im[(im > 160) * (im < 170)]):
                 raise KeyboardInterrupt
 
             # if info["cte"] > 2.5 or info["cte"] < -2:
@@ -85,6 +108,8 @@ for i in range(1000):
             next_state = alg.process_image(next_state)
             #reward = float(len(next_state[np.isclose(next_state, state[3, :, :], atol=1.5)]) / 1600.0)
             reward = (throttle - THROTTLE_MIN) / (THROTTLE_MAX - THROTTLE_MIN) 
+
+            reward = darkness / 7000
 
             image_to_ascii(next_state[::2].T)
 
@@ -146,7 +171,7 @@ for i in range(1000):
 
         if len(alg.replay_buffer) > alg.batch_size:
             print("Training")
-            for i in range(1):
+            for i in range(training_after_episodes):
                 alg.update_parameters()
 
         time.sleep(5)

@@ -95,7 +95,7 @@ class Actor(nn.Module):
 
 
 class SAC:
-    def __init__(self, gamma=0.99, tau=0.005, lr=0.001, replay_buffer_size=1000000, 
+    def __init__(self, gamma=0.99, tau=0.005, lr=0.0001, replay_buffer_size=1000000, 
     hidden_size=256, batch_size=64, n_episodes=1000, n_random_episodes=10,
     discount=0.90, horizon=50, throttle_min=0, throttle_max=1, reward="speed",
     im_rows=40, im_cols=40, linear_output=64):
