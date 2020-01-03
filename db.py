@@ -5,13 +5,13 @@ def get_connection(db):
     conn = sqlite3.connect(db)
     return conn.cursor()
 
-def create_db(hyperparameters, db_name="DB_{}.db".format(datetime.datetime.now().isoformat())):
+def create_db(db_name="DB_{}.db".format(datetime.datetime.now().isoformat())):
 
     c = get_connection(db_name)
 
     c.execute("CREATE TABLE sweeps (id integer primary key, time text, conf text, description text)")
     
-    c.excecute("CREATE TABLE sessions (id integer primary key, time text, description text)")
+    c.excecute("CREATE TABLE sessions (id integer primary key, time text, description text, model_name text)")
     c.commit()
 
     c.execute("CREATE TABLE params (session int, name text, value real)")
@@ -22,12 +22,24 @@ def create_db(hyperparameters, db_name="DB_{}.db".format(datetime.datetime.now()
 
     c.close()
 
-def new_session(db, description="Failed"):
+def insert_sweep(db, conf, description):
 
     c = get_connection(db)
-    t = datetime.datetime.now()
 
-    c.execute("INSERT INTO sessions (id, time, description) VALUES (NULL, ?, ?)", (t, description))
+    t = datetime.datetime.now().isoformat()
+
+    c.execute("INSERT INTO sweeps (id, time, conf, description) VALUES (NULL, ?, ?, ?)", (t, conf, description))
+    ret = c.execute("SELECT id FROM sweeps WHERE time = ?", (t, 0)).fetchone()[0]
+    c.close
+
+    return ret
+
+def insert_session(db, model_name, description="Failed"):
+
+    c = get_connection(db)
+    t = datetime.datetime.now().isoformat()
+
+    c.execute("INSERT INTO sessions (id, time, description) VALUES (NULL, ?, ?, )", (t, description))
 
     ret = c.execute("SELECT id FROM sessions WHERE time = ?", (t,)).fetchone()[0]
     c.close()

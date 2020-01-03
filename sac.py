@@ -95,28 +95,43 @@ class Actor(nn.Module):
 
 
 class SAC:
-    def __init__(self, gamma=0.99, tau=0.005, lr=0.0001, replay_buffer_size=1000000, 
-    hidden_size=256, batch_size=64, n_episodes=1000, n_random_episodes=10,
-    discount=0.90, horizon=50, throttle_min=0, throttle_max=1, reward="speed",
-    im_rows=40, im_cols=40, linear_output=64):
+    def __init__(self, parameters):
 
-        self.gamma = gamma
-        self.tau = tau
-        self.lr = lr
-        self.replay_buffer_size = replay_buffer_size
-        self.hidden_size = hidden_size
-        self.batch_size = batch_size
-        self.n_episodes = n_episodes
-        self.n_random_episodes = n_random_episodes
-        self.discount = discount
-        self.horizon = horizon
-        self.throttle_max = throttle_max
-        self.throttle_min = throttle_min
-        self.im_rows = im_rows
-        self.im_cols = im_cols
-        self.linear_ouput = linear_output
+        params = {
+            "gamma": 0.99,
+            "tau": 0.005,
+            "lr": 0.0001,
+            "replay_buffer_size": 1000000,
+            "hidden_size": 1000000,
+            "batch_size": 64,
+            "n_episodes": 1000,
+            "n_random_episodes": 10,
+            "discount": 0.9,
+            "horizon": 50,
+            "im_rows": 40,
+            "im_cols": 40,
+            "linear_output": 64,
+            "target_entropy": -2
+        }
+        
+        for arg in parameters:
+            params[arg] = kwargs[arg]
 
-        self.act_size = 2
+
+        self.gamma = params["gamma"]
+        self.tau = params["tau"]
+        self.lr = params["lr"]
+        self.replay_buffer_size = params["replay_buffer_size"]
+        self.hidden_size = params["hidden_size"]
+        self.batch_size = params["batch_size"]
+        self.n_episodes = params["n_episodes"]
+        self.n_random_episodes = params["n_random_episodes"]
+        self.discount = params["discount"]
+        self.horizon = params["horizon"]
+        self.im_rows = params["im_rows"]
+        self.im_cols = params["im_cols"]
+        self.linear_ouput = params["linear_output"]
+        self.target_entropy = params["target_entropy"]
 
         self.critic = critic = Critic(linear_output, hidden_size, self.act_size).to(device)
         self.critic_optimizer = torch.optim.Adam(critic.parameters(), lr=lr)
@@ -128,7 +143,7 @@ class SAC:
         self.actor = Actor(linear_output, self.act_size, hidden_size).to(device)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=lr)
 
-        self.target_entropy = -self.act_size
+        
 
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
         self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=lr)

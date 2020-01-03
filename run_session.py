@@ -9,62 +9,50 @@ from car import Car
 from gym import spaces
 
 from functions import process_image, image_to_ascii, rgb2gray
-
 from episode_buffer import EpisodeBuffer
 
-alg = SAC()
-car = Car()
-car.reset()
+def run_session(db, sweep, session, model_name, params):
 
-## SAC hyperparameters
+    alg = SAC(params)
+    car = Car()
+    car.reset()
 
-## Other hyperparameters
+    trainin_after_episodes =  params["training_after_episodes"]
 
-training_after_episodes = 1
+    episode = 0
 
+    random_episodes = params["random_episodes"]
 
+    max_episode_length = params["max_episode_length"]
 
-episode = 0
-random_episodes = 5
+    THROTTLE_MAX = params["throttle_max"]
+    THROTTLE_MIN = params["throttle_min"]
+    STEER_LIMIT_LEFT = -1
+    STEER_LIMIT_RIGHT = 1
 
-cmd = input("If you want to load a model, give model path, default last checkpoint.")
-if cmd != "":
-    episode = random_episodes
-    if os.path.isfile(cmd):
-        alg = torch.load(cmd)
-    else:
-        alg = torch.load("sac_model_checkpoint.pth")
+    action_space = spaces.Box(low=np.array([STEER_LIMIT_LEFT, -1]), 
+        high=np.array([STEER_LIMIT_RIGHT, 1]), dtype=np.float32 )
 
-max_episode_length = 5000
-THROTTLE_MAX = 0.3
-THROTTLE_MIN = 0.1
-STEER_LIMIT_LEFT = -1
-STEER_LIMIT_RIGHT = 1
-
-
-action_space = spaces.Box(low=np.array([STEER_LIMIT_LEFT, -1]), 
-high=np.array([STEER_LIMIT_RIGHT, 1]), dtype=np.float32 )
-
-
-for i in range(1000):
-    #input("Press enter to start")      
-    episode += 1
+    for i in range(max_episode_length):
+        episode += 1
     throttle = 0.15
     try:
         step = 0
-#       state, info = car.reset()
 
         state = car.reset()
         car.step([0,0.01])
+
         time.sleep(1)
+
         state = alg.process_image(state)
         state = np.stack((state, state, state, state), axis=0)
         episode_buffer = EpisodeBuffer(alg.horizon, alg.discount)
         episode_reward = 0
 
         while step < max_episode_length:
+            
             t = time.time_ns()
-            #print(state)
+            
             step += 1
             temp = state[np.newaxis, :]
 
@@ -81,7 +69,6 @@ for i in range(1000):
             action[1] = 0.3
             
 
-#           next_state, info = car.step(action)
             next_state = car.step(action)
 
             im = next_state
@@ -90,11 +77,8 @@ for i in range(1000):
             if darkness < 2500:# < len(im[(im > 160) * (im < 170)]):
                 raise KeyboardInterrupt
 
-            # if info["cte"] > 2.5 or info["cte"] < -2:
-            #     raise KeyboardInterrupt
-
+            
             next_state = alg.process_image(next_state)
-            #reward = float(len(next_state[np.isclose(next_state, state[3, :, :], atol=1.5)]) / 1600.0)
             reward = (throttle - THROTTLE_MIN) / (THROTTLE_MAX - THROTTLE_MIN) 
 
             reward = darkness / 7000
@@ -163,5 +147,4 @@ for i in range(1000):
                 alg.update_parameters()
 
         time.sleep(5)
-        
 
