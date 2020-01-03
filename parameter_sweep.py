@@ -7,3 +7,6 @@ params = {
     "hidden_size": [16, 256],
     "batch_size"
 }
+
+
+def parameter_sweep(params, )
