@@ -4,13 +4,13 @@
     "db": "data.db",
     "description": "First actual sweep",
     "sessions": 100,
-    "max_session_length": 200
+    "max_session_length": 100
 },
 
 "sweep": {
     "throttle_min": [0.1],
     "throttle_max": [0.3],
-    "training_after_episodes": [1, 50],
+    "training_after_episodes": [1],
     "random_episodes": [5, 10],
     "max_episode_length": [500],
     "save_model": [true],

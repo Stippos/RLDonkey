@@ -25,11 +25,11 @@ def parameter_sweep(conf_file):
             params[p] = param
 
         db.insert_parameters(settings["db"], session, list(zip(params.keys(), params.values())))
-    try:
-        run_session(settings["db"], settings["max_session_length"], i, session, model_name, params)
-        db.update_description(settings["db"], session, "Success")
-    except:
-        pass
+        try:
+            run_session(settings["db"], settings["max_session_length"], i, session, model_name, params)
+            db.update_description(settings["db"], session, "Success")
+        except:
+            pass
 
 if __name__ == "__main__":
     parameter_sweep("sweep_2.json")
