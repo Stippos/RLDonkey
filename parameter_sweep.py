@@ -32,6 +32,6 @@ def parameter_sweep(conf_file):
             pass
 
 if __name__ == "__main__":
-    parameter_sweep("sweep_2.json")
+    parameter_sweep("sweep_3.json")
 
     
