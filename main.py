@@ -12,7 +12,7 @@ from functions import process_image, image_to_ascii, rgb2gray
 
 from episode_buffer import EpisodeBuffer
 
-alg = SAC()
+alg = SAC(parameters={})
 car = Car()
 car.reset()
 

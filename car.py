@@ -7,13 +7,14 @@ class Car:
     def __init__(self, car = "kari", server = "mqtt.eclipse.org"):
         self.control = remote_controller.DonkeyRemoteContoller(car, server)
         self.state = self.control.observe()
+        #print(self.state)
         #self.size = np.prod(self.state.shape)
 
     def reset(self):
         self.control.take_action(action=[0, 0])
         #self.state, info = self.control.observe()
         self.state = self.control.observe()
-        
+        #print(self.state)
         return self.state#, info
     
     def step(self, control):
@@ -24,4 +25,5 @@ class Car:
         #     self.step(control)
         
         self.control.take_action(action=control)
+        #print(self.control.observe())
         return self.control.observe()

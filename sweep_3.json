@@ -1,0 +1,32 @@
+{
+    
+"settings": {
+    "db": "data.db",
+    "description": "First actual sweep",
+    "sessions": 100,
+    "max_session_length": 200
+},
+
+"sweep": {
+    "throttle_min": [0.1],
+    "throttle_max": [0.3],
+    "training_after_episodes": [1, 50],
+    "random_episodes": [5, 10],
+    "max_episode_length": [500],
+    "save_model": [true],
+    "gamma": [0.99, 0.95],
+    "tau": [0.01, 0.005, 0.001],
+    "lr": [0.01, 0.001, 0.0001],
+    "replay_buffer_size": [1000000],
+    "hidden_size": [256, 128, 64],
+    "batch_size": [64, 128],
+    "max_steps": [500],
+    "discount": [0.9],
+    "horizon": [50],
+    "im_rows": [40],
+    "im_cols": [40],
+    "linear_output": [64],
+    "target_entropy": [-2, -1, -6]
+    }
+
+}

@@ -10,7 +10,6 @@ def parameter_sweep(conf_file):
     with open(conf_file) as f:
         conf = json.load(f)
         settings = conf["settings"]
-        sweep = conf["sweep"]
 
     if not os.path.isfile(settings["db"]):
         db.create_db(settings["db"])
@@ -21,12 +20,18 @@ def parameter_sweep(conf_file):
         params = {}
         model_name = "sweep_{}_session_{}_model.pth".format(sweep, i)
         session = db.insert_session(settings["db"], model_name)
-        for p in sweep:
-            param = random.choice(params[p])
+        for p in conf["sweep"]:
+            param = random.choice(conf["sweep"][p])
             params[p] = param
 
         db.insert_parameters(settings["db"], session, list(zip(params.keys(), params.values())))
+    try:
+        run_session(settings["db"], settings["max_session_length"], i, session, model_name, params)
+        db.update_description(settings["db"], session, "Success")
+    except:
+        pass
 
-        run_session(settings["db"], sweep, session, model_name, params)
+if __name__ == "__main__":
+    parameter_sweep("sweep_2.json")
 
     

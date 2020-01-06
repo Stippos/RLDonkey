@@ -102,7 +102,7 @@ class SAC:
             "tau": 0.005,
             "lr": 0.0001,
             "replay_buffer_size": 1000000,
-            "hidden_size": 1000000,
+            "hidden_size": 100,
             "batch_size": 64,
             "n_episodes": 1000,
             "n_random_episodes": 10,
@@ -115,7 +115,7 @@ class SAC:
         }
         
         for arg in parameters:
-            params[arg] = kwargs[arg]
+            params[arg] = parameters[arg]
 
 
         self.gamma = params["gamma"]
@@ -130,23 +130,24 @@ class SAC:
         self.horizon = params["horizon"]
         self.im_rows = params["im_rows"]
         self.im_cols = params["im_cols"]
-        self.linear_ouput = params["linear_output"]
+        self.linear_output = params["linear_output"]
         self.target_entropy = params["target_entropy"]
+        self.act_size = 2
 
-        self.critic = critic = Critic(linear_output, hidden_size, self.act_size).to(device)
-        self.critic_optimizer = torch.optim.Adam(critic.parameters(), lr=lr)
+        self.critic = Critic(self.linear_output, self.hidden_size, self.act_size).to(device)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
 
-        self.critic_target = Critic(linear_output, hidden_size, self.act_size).to(device)
+        self.critic_target = Critic(self.linear_output, self.hidden_size, self.act_size).to(device)
         for target_param, param in zip(self.critic_target.parameters(), self.critic.parameters()):
             target_param.data.copy_(param.data)
 
-        self.actor = Actor(linear_output, self.act_size, hidden_size).to(device)
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=lr)
+        self.actor = Actor(self.linear_output, self.act_size, self.hidden_size).to(device)
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
 
         
 
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
-        self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=lr)
+        self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=self.lr)
 
         self.replay_buffer = deque(maxlen=self.replay_buffer_size)
         
