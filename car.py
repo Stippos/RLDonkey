@@ -25,5 +25,6 @@ class Car:
         #     self.step(control)
         
         self.control.take_action(action=control)
+        time.sleep(0.1)
         #print(self.control.observe())
         return self.control.observe()

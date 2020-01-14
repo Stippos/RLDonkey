@@ -12,6 +12,59 @@ import numpy as np
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+class EncoderDeepConv(nn.Module):
+    def __init__(self, im_cols, im_rows, n_components):
+        super(EncoderDeepConv, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=5, padding=2, stride=2)
+        self.conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=5, padding=2, stride=2)
+        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=5, padding=2, stride=2)
+        self.conv4 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=5, padding=2)
+        self.fc1 = nn.Linear(im_rows // 8 *im_cols // 8 * 64, 250)
+        self.fc2 = nn.Linear(250, n_components)
+
+    def forward(self, x, verbose=False):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = F.relu(self.conv4(x))
+        
+        #print(x.shape)
+        x = x.view(-1, self.fc1.in_features)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        
+        return x
+    
+    
+class DecoderDeepConv(nn.Module):
+    def __init__(self, im_cols, im_rows, n_components):
+        super(DecoderDeepConv, self).__init__()        
+        
+        self.im_rows = im_rows
+        self.im_cols = im_cols
+
+        self.fc1 = nn.Linear(n_components, 250)
+        self.fc2 = nn.Linear(250, im_cols // 8 * im_rows // 8 * 64)
+        self.conv1 = nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=5, padding=2, stride=1)#, output_padding=0)
+        self.conv2 = nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=5, padding=2, stride=2, output_padding=1)
+        self.conv3 = nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=5, padding=2, stride=2, output_padding=1)
+        self.conv4 = nn.ConvTranspose2d(in_channels=16, out_channels=1, kernel_size=5, padding=2, stride=2, output_padding=1)
+
+
+    def forward(self, x, verbose=False):
+
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = x.view(-1, 64, self.im_rows // 8, self.im_cols // 8)
+        #print(x.shape)
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = self.conv4(x)
+
+        return x
+
+
 class Flatten(nn.Module):
     def forward(self, input):
         return input.view(input.size(0), -1)
@@ -19,27 +72,15 @@ class Flatten(nn.Module):
 class Conv(nn.Module):
     def __init__(self, output_dim):
         super().__init__()
-        # self.net = nn.Sequential(
-        #     nn.Conv2d(4, 16, 3, 2),
-        #     nn.ReLU(),
-        #     nn.Conv2d(16, 16, 3, 2),
-        #     nn.ReLU(),
-        #     nn.Conv2d(16, 16, 3, 2),
-        #     nn.ReLU(),
-        #     nn.Conv2d(16, 16, 3, 1),
-        #     Flatten()
-        # )
         self.net = nn.Sequential(
-            nn.Conv2d(4, 16, 4, 1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(16, 16, 4, 1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(16, 16, 2, 1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(16, 16, 2, 1),
+            nn.Conv2d(4, 16, 5, 1),
+            nn.Tanh(),
+            nn.Conv2d(16, 16, 5, 1),
+            nn.Tanh(),
+            nn.Conv2d(16, 16, 5, 1),
+            nn.Tanh(),
+            nn.Conv2d(16, 16, 3, 1),
+            nn.Tanh(),
             Flatten()
         )
 
@@ -65,13 +106,12 @@ class Critic(nn.Module):
     """ Twin Q-networks """
     def __init__(self, linear_output, hidden_size, act_size):
         super().__init__()
-        self.conv = Conv(linear_output)
-        self.net1 = MLP(linear_output+act_size,1, hidden_size)
-        self.net2 = MLP(linear_output+act_size,1, hidden_size)
+        self.net1 = MLP(linear_output+2+act_size,1, hidden_size)
+        self.net2 = MLP(linear_output+2+act_size,1, hidden_size)
 
     def forward(self, state, action):
-        embedding = self.conv.forward(state)
-        state_action = torch.cat([embedding, action], 1)
+        
+        state_action = torch.cat([state, action], 1)
         return self.net1(state_action), self.net2(state_action)
 
 class Actor(nn.Module):
@@ -79,13 +119,12 @@ class Actor(nn.Module):
     def __init__(self, linear_output, act_size, hidden_size):
         super().__init__()
         self.act_size = act_size
-        self.conv = Conv(linear_output)
-        self.net = MLP(linear_output, act_size*2, hidden_size)
+        self.net = MLP(linear_output+2, act_size*2, hidden_size)
 
     def forward(self, state):
-        x = self.net(self.conv(state))
+        x = self.net(state)
         mean, log_std = x[:, :self.act_size], x[:, self.act_size:]
-        log_std = torch.clamp(log_std, min=-20, max=2)
+        log_std = torch.clamp(log_std, min=-1, max=1)
         return mean, log_std
 
     def sample(self, state):
@@ -101,7 +140,7 @@ class Actor(nn.Module):
 
     def select_action(self, state):
         
-        state = torch.FloatTensor(state).to(device)
+        
         action, _ = self.sample(state)
         
         return action[0].detach().cpu().numpy()
@@ -121,10 +160,11 @@ class SAC:
             "n_random_episodes": 10,
             "discount": 0.9,
             "horizon": 50,
-            "im_rows": 40,
+            "im_rows": 20,
             "im_cols": 40,
-            "linear_output": 64,
-            "target_entropy": -2
+            "linear_output": 20,
+            "target_entropy": -2,
+            "coder_lr": 0.001
         }
         
         for arg in parameters:
@@ -134,6 +174,7 @@ class SAC:
         self.gamma = params["gamma"]
         self.tau = params["tau"]
         self.lr = params["lr"]
+        self.coder_lr = params["coder_lr"]
         self.replay_buffer_size = params["replay_buffer_size"]
         self.hidden_size = params["hidden_size"]
         self.batch_size = params["batch_size"]
@@ -146,6 +187,17 @@ class SAC:
         self.linear_output = params["linear_output"]
         self.target_entropy = params["target_entropy"]
         self.act_size = 2
+        
+
+
+        self.encoder = EncoderDeepConv(self.im_cols, self.im_rows, self.linear_output).to(device)
+        self.decoder = DecoderDeepConv(self.im_cols, self.im_rows, self.linear_output).to(device)
+
+        coder_parameters = list(self.encoder.parameters()) + list(self.decoder.parameters())
+
+        self.coder_optimizer = torch.optim.Adam(coder_parameters, lr=self.coder_lr)
+        
+        self.coder_criterion = nn.MSELoss()
 
         self.critic = Critic(self.linear_output, self.hidden_size, self.act_size).to(device)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
@@ -157,24 +209,50 @@ class SAC:
         self.actor = Actor(self.linear_output, self.act_size, self.hidden_size).to(device)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
 
-        
-
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
         self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=self.lr)
 
         self.replay_buffer = deque(maxlen=self.replay_buffer_size)
-        
+    
+    def update_encoder(self, epochs, size):
+
+        states, _, _, _, _ = zip(*random.sample(self.replay_buffer, k=size))
+        loader = torch.utils.data.DataLoader([torch.Tensor(x).to(device) for x in states], batch_size = 64, shuffle=True)
+
+        for e in range(epochs):
+            loss = 0.0
+            for i, inputs in enumerate(loader):
+                
+                self.coder_optimizer.zero_grad()
+
+                encoder_outputs = self.encoder(inputs)
+                decoder_outputs = self.decoder(encoder_outputs)
+
+                loss = self.coder_criterion(decoder_outputs, inputs)
+                loss.backward()
+
+                self.coder_optimizer.step()
+
+                loss += loss.item()
+
+            print("VAE loss: {}".format(loss / i))
+
 
     def update_parameters(self):
 
         batch = random.sample(self.replay_buffer, k=self.batch_size)
         state, action, reward, next_state, not_done = [torch.FloatTensor(t).to(device) for t in zip(*batch)]
 
+
         alpha = self.log_alpha.exp().item()
 
         # Update critic
 
         with torch.no_grad():
+            
+            state = self.encoder(state)
+            next_state = self.encoder(next_state)
+
             next_action, next_action_log_prob = self.actor.sample(next_state)
             q1_next, q2_next = self.critic_target(next_state, next_action)
             q_next = torch.min(q1_next, q2_next)
@@ -205,6 +283,8 @@ class SAC:
         actor_loss.backward()
         self.actor_optimizer.step()
 
+        #print("Critic loss: {}, Actor loss: {}".format(critic_loss.item(), actor_loss.item()))
+
         # Update alpha
 
         alpha_loss = -(self.log_alpha * (action_new_log_prob + self.target_entropy).detach()).mean()
@@ -213,8 +293,14 @@ class SAC:
         alpha_loss.backward()
         self.alpha_optimizer.step()
 
-    def select_action(self, state):
-        return self.actor.select_action(state)
+        return critic_loss.item(), actor_loss.item()
+
+    def select_action(self, state, steering, throttle):
+        #print(state.shape)
+        tens = torch.Tensor(state).to(device)
+        #print(tens.shape)
+        embedding = torch.FloatTensor(np.hstack((self.encoder(tens).detach().cpu().squeeze(), steering, throttle))[np.newaxis, :]).to(device)
+        return self.actor.select_action(embedding)
 
     def push_buffer(self, e):
 
@@ -223,7 +309,10 @@ class SAC:
     def process_image(self, rgb):
 
         im = np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
-        obs = cv2.resize(im, (self.im_rows, self.im_cols))
+        #obs = cv2.resize(im, (self.im_rows, self.im_cols))[20:]
+        #obs = cv2.resize(im, (40, 40))[20:, :]
+        obs = im[40:,:]
+        
         
         return obs
 
@@ -253,9 +342,25 @@ class SAC:
         self.alpha_optimizer.load_state_dict(data["alpha_optimizer"])
         self.log_alpha = data["log_alpha"]
 
-    def update_lr(self, factor):
-        self.lr *= factor
+    def update_coder_lr(self, lr):
+        for p in self.coder_optimizer.param_groups:
+            p["lr"] = lr
 
+
+    def update_sac_lr(self, lr):
+        for p in self.actor_optimizer.param_groups:
+            p["lr"] = lr
+
+        for p in self.critic_optimizer.param_groups:
+            p["lr"] = lr
+
+    def load_coder(self, decoder, encoder):
+
+        self.encoder.load_state_dict(torch.load(encoder))
+        self.decoder.load_state_dict(torch.load(decoder))
+        self.encoder.to(device)
+        self.decoder.to(device)
+        
 
 
           
