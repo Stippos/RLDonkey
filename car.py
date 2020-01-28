@@ -12,6 +12,7 @@ class Car:
 
     def reset(self):
         self.control.take_action(action=[0, 0])
+        time.sleep(1)
         #self.state, info = self.control.observe()
         self.state = self.control.observe()
         #print(self.state)

@@ -12,40 +12,6 @@ import numpy as np
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class Flatten(nn.Module):
-    def forward(self, input):
-        return input.view(input.size(0), -1)
-
-class Conv(nn.Module):
-    def __init__(self, output_dim):
-        super().__init__()
-        # self.net = nn.Sequential(
-        #     nn.Conv2d(4, 16, 3, 2),
-        #     nn.ReLU(),
-        #     nn.Conv2d(16, 16, 3, 2),
-        #     nn.ReLU(),
-        #     nn.Conv2d(16, 16, 3, 2),
-        #     nn.ReLU(),
-        #     nn.Conv2d(16, 16, 3, 1),
-        #     Flatten()
-        # )
-        self.net = nn.Sequential(
-            nn.Conv2d(4, 16, 4, 1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(16, 16, 4, 1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(16, 16, 2, 1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(16, 16, 2, 1),
-            Flatten()
-        )
-
-    def forward(self, x):
-        return self.net(x)
-
 class MLP(nn.Module):
     def __init__(self, input_size, output_size, hidden_size, init_w=3e-3):
         super().__init__()
@@ -63,14 +29,13 @@ class MLP(nn.Module):
 
 class Critic(nn.Module):
     """ Twin Q-networks """
-    def __init__(self, linear_output, hidden_size, act_size):
+    def __init__(self, linear_output, act_size, hidden_size):
         super().__init__()
-        self.conv = Conv(linear_output)
         self.net1 = MLP(linear_output+act_size,1, hidden_size)
         self.net2 = MLP(linear_output+act_size,1, hidden_size)
 
     def forward(self, state, action):
-        embedding = self.conv.forward(state)
+        embedding = state
         state_action = torch.cat([embedding, action], 1)
         return self.net1(state_action), self.net2(state_action)
 
@@ -79,12 +44,12 @@ class Actor(nn.Module):
     def __init__(self, linear_output, act_size, hidden_size):
         super().__init__()
         self.act_size = act_size
-        self.conv = Conv(linear_output)
         self.net = MLP(linear_output, act_size*2, hidden_size)
 
     def forward(self, state):
-        x = self.net(self.conv(state))
+        x = self.net(state)
         mean, log_std = x[:, :self.act_size], x[:, self.act_size:]
+
         log_std = torch.clamp(log_std, min=-20, max=2)
         return mean, log_std
 
@@ -147,10 +112,10 @@ class SAC:
         self.target_entropy = params["target_entropy"]
         self.act_size = 2
 
-        self.critic = Critic(self.linear_output, self.hidden_size, self.act_size).to(device)
+        self.critic = Critic(self.linear_output, self.act_size, self.hidden_size).to(device)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
 
-        self.critic_target = Critic(self.linear_output, self.hidden_size, self.act_size).to(device)
+        self.critic_target = Critic(self.linear_output, self.act_size, self.hidden_size).to(device)
         for target_param, param in zip(self.critic_target.parameters(), self.critic.parameters()):
             target_param.data.copy_(param.data)
 
@@ -158,7 +123,6 @@ class SAC:
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
 
         
-
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
         self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=self.lr)
 
@@ -167,10 +131,11 @@ class SAC:
 
     def update_parameters(self):
 
-        batch = random.sample(self.replay_buffer, k=self.batch_size)
+        k = min(self.batch_size, len(self.replay_buffer))
+        batch = random.sample(self.replay_buffer, k=k)
         state, action, reward, next_state, not_done = [torch.FloatTensor(t).to(device) for t in zip(*batch)]
 
-        alpha = self.log_alpha.exp().item()
+        alpha = 0.1#self.log_alpha.exp().item()
 
         # Update critic
 
@@ -220,13 +185,6 @@ class SAC:
 
         self.replay_buffer.append(e)
 
-    def process_image(self, rgb):
-
-        im = np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
-        obs = cv2.resize(im, (self.im_rows, self.im_cols))
-        
-        return obs
-
     def save_model(self, path="checkpoint"):
         
         save_path = "sac_model" + path + ".pth"
@@ -253,10 +211,3 @@ class SAC:
         self.alpha_optimizer.load_state_dict(data["alpha_optimizer"])
         self.log_alpha = data["log_alpha"]
 
-    def update_lr(self, factor):
-        self.lr *= factor
-
-
-
-          
-        

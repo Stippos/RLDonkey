@@ -1,9 +1,4 @@
-import numpy as np
-import torch
-import os
-import time
-
-from sac_with_vae import SAC, EncoderDeepConv, DecoderDeepConv
+SAC, EncoderDeepConv, DecoderDeepConv
 from car import Car
 
 from gym import spaces
