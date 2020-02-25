@@ -14,7 +14,7 @@ from gym import spaces
 
 pretrained_vae = False
 #vae = torch.load("vae.pth")
-vae = VAE()
+vae = VAE(lr=0.0001)
 
 vae_training_episodes = 0
 vae_initial_updates = 100
