@@ -81,7 +81,7 @@ class Decoder_4_Channels_Small(nn.Module):
 
 class VAE:
     
-    def __init__(self, image_size=40, linear_input=250, linear_output=32, lr=0.001, batch_size=64, image_channels=1):
+    def __init__(self, image_size=40, linear_input=1000, linear_output=32, lr=0.001, batch_size=64, image_channels=3):
 
         self.encoder = Encoder_4_Channels_Small(image_size, linear_input, linear_output, image_channels).to(device)
         self.decoder = Decoder_4_Channels_Small(image_size, linear_input, linear_output, image_channels).to(device)
