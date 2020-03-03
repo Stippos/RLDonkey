@@ -10,10 +10,10 @@ from vae import VAE
 from gym import spaces
 
 pretrained_vae = True
-vae = torch.load("vae.pth")
+vae = torch.load("vae_real.pth")
 vae_training_episodes = 0
 #vae_output = vae.linear_output
-vae_output = 20
+vae_output = 32
 frame_stack = 1 
 len_command_history = 9
 sac_input = (vae_output + 2 + len_command_history * 2) * frame_stack
@@ -69,8 +69,12 @@ def is_dead(im, threshold):
         return True
     else:
         return False
-def darkness(im):
-    return len(im[(im > 120) * (im < 130)])
+
+def darkness(im, threshold):
+    gs = np.dot(im, [0.299, 0.587, 0.114])
+    gs = (gs > threshold) * 255
+    gs = gs[100:, 20:140]
+    return len(gs[gs==0])
 
 def enforce_limits(action, prev_steering):
      var = (THROTTLE_MAX - THROTTLE_MIN) / 2
@@ -159,6 +163,9 @@ for e in range(episodes):
                 reward = 1 + throttle_weight_1 * (action[1] + 1)
                 #reward = darkness(obs) / 7000
                 
+                if darkness(obs, 50) < 100:
+                    done = 1.0
+
                 if done:
                     reward = -10 + throttle_weight_2 * (action[1] + 1)
 
@@ -186,7 +193,7 @@ for e in range(episodes):
                 continue
 
         env.reset()
-        time.sleep(3)
+        time.sleep(1)
         env.step((0,0.01))
 
         for i in range(len(episode_buffer)):
@@ -203,11 +210,13 @@ for e in range(episodes):
                     vae.update_parameters(20, len(var.images))
                 else:
                     vae.update_parameters(1, 1000)
-        
+
+            print("Training SAC")
             for i in range(agent_training_episodes):
                 agent.update_parameters()
-            if e % 10 == 9:
-                torch.save(agent, "model.pth")
+            
+            print("Saving model")
+            torch.save(agent, "model.pth")
 
 
    
