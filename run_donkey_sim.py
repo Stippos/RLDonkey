@@ -10,10 +10,10 @@ from vae import VAE
 from gym import spaces
 
 pretrained_vae = True
-vae = torch.load("vae_real.pth")
+vae = torch.load("vae.pth")
 vae_training_episodes = 0
 #vae_output = vae.linear_output
-vae_output = 32
+vae_output = 20
 frame_stack = 1 
 len_command_history = 9
 sac_input = (vae_output + 2 + len_command_history * 2) * frame_stack
@@ -164,8 +164,8 @@ for e in range(episodes):
                 reward = 1
                 #reward = darkness(obs) / 7000
                 
-                if darkness(obs, 50) < 100:
-                    done = 1.0
+                # if darkness(obs, 50) < 100:
+                #     done = 1.0
 
                 if done:
                     reward = -10 + throttle_weight_2 * (action[1] + 1)
